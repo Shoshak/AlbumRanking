@@ -20,4 +20,6 @@ jobs:
     with:
       branch: master
       folder: release/wwwroot
+    - name: Change base-tag in index.html
+      run: sed -i 's/<base href="\/" \/>/<base href="\/AlbumRanking\/" \/>/g' release/wwwroot/index.html
     
