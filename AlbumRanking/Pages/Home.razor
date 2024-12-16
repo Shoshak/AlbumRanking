@@ -10,6 +10,15 @@
     <InputNumber @bind-Value="AlbumId"></InputNumber>
 </EditForm>
 
+<div class="p-2">
+    <SortableList Id="sortable" Items="_tracks" Context="item" OnUpdate="SortList">
+        <SortableItemTemplate>
+            <div class="card" style="height: 4rem;">
+                <p>@item</p>
+            </div>
+        </SortableItemTemplate>
+    </SortableList>
+</div>
 
 <div class="p-2">
     @switch (_state)
@@ -26,13 +35,6 @@
             <p>Не могу найти альбом.</p>
             break;
         case State.Found:
-            <SortableList Id="sortable" Items="_tracks" Context="item" OnUpdate="SortList">
-                <SortableItemTemplate>
-                    <div class="card" style="height: 4rem;">
-                        <p>@item</p>
-                    </div>
-                </SortableItemTemplate>
-            </SortableList>
             <button @onclick="ExportRanking" class="mt-2">Export</button>
             <button @onclick="CopyRankingToClipboard">Copy</button>
             break;
