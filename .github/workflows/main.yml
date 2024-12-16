@@ -17,6 +17,8 @@ jobs:
     - run: dotnet publish AlbumRanking/AlbumRanking.csproj -c Release -o release --nologo
     - name: Change base-tag in index.html
       run: sed -i 's/<base href="\/" \/>/<base href="\/AlbumRanking\/" \/>/g' release/wwwroot/index.html
+    - name: Add .nojekyll file
+      run: touch release/wwwroot/.nojekyll
     - name: Commit wwwroot to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
