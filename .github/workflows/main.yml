@@ -11,15 +11,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Setup dotnet
-    uses: actions/setup-dotnet@v4
-    with:
-      dotnet-version: '8.0.x'
+      uses: actions/setup-dotnet@v4
+      with: 
+        dotnet-version: '8.0.x'
     - run: dotnet publish AlbumRanking\AlbumRanking.csproj -c Release -o release --nologo
     - name: Commit wwwroot to GitHub Pages
-    uses: JamesIves/github-pages-deploy-action@v4
-    with:
-      branch: master
-      folder: release/wwwroot
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        branch: master
+        folder: release/wwwroot
     - name: Change base-tag in index.html
       run: sed -i 's/<base href="\/" \/>/<base href="\/AlbumRanking\/" \/>/g' release/wwwroot/index.html
     
