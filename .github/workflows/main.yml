@@ -14,7 +14,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with: 
         dotnet-version: '8.0.x'
-    - run: dotnet publish AlbumRanking\AlbumRanking.csproj -c Release -o release --nologo
+    - run: dotnet publish AlbumRanking/AlbumRanking.csproj -c Release -o release --nologo
     - name: Commit wwwroot to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
