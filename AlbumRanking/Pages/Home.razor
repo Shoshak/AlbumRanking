@@ -1,0 +1,105 @@
+﻿@page "/"
+@using Newtonsoft.Json.Linq
+@using AlbumRanking.Shared
+@inject HttpClient Client
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Album ranking</PageTitle>
+
+<EditForm Model="this" OnSubmit="Submit">
+    <InputNumber @bind-Value="AlbumId"></InputNumber>
+</EditForm>
+
+<SortableList Id="sortable" Items="_tracks" Context="item" OnUpdate="SortList">
+    <SortableItemTemplate>
+        <div class="card">
+            <p>@item</p>
+        </div>
+    </SortableItemTemplate>
+</SortableList>
+
+@if (NotFound)
+{
+    <p>Cannot find the provided album</p>
+}
+
+@if (_tracks.Count != 0)
+{
+    <button @onclick="ExportRanking">Export</button>
+    <button @onclick="CopyRankingToClipboard">Copy</button>
+}
+
+@code {
+
+    [SupplyParameterFromForm]
+    private int? AlbumId { get; set; }
+    
+    private string? AlbumName { get; set; }
+    
+    private bool NotFound { get; set; }
+
+    private readonly List<string> _tracks = [];
+
+    private async Task Submit()
+    {
+        _tracks.Clear();
+        string resString;
+        try
+        {
+
+            resString = await Client.GetStringAsync($"https://api.discogs.com/masters/{AlbumId}");
+        }
+        catch (HttpRequestException)
+        {
+            NotFound = true;
+            return;
+        }
+
+        NotFound = false;
+        var json = JObject.Parse(resString);
+        var tracks =
+            from t in json["tracklist"]
+            select (string)t["title"];
+        AlbumName = (string)json["title"]!;
+        _tracks.AddRange(tracks);
+    }
+    
+    private void SortList((int oldIndex, int newIndex) indices)
+    {
+        // deconstruct the tuple
+        var (oldIndex, newIndex) = indices;
+
+        var itemToMove = _tracks[oldIndex];
+        _tracks.RemoveAt(oldIndex);
+
+        if (newIndex < _tracks.Count)
+        {
+            _tracks.Insert(newIndex, itemToMove);
+        }
+        else
+        {
+            _tracks.Add(itemToMove);
+        }
+
+        StateHasChanged();
+    }
+
+    private string GetRankingText()
+    {
+
+        var tracks = _tracks.Select((t, i) => $"{i + 1}. {t}");
+        var contents = string.Join("\n", tracks);
+        return $"{AlbumName}: \n\n" + contents;
+    }
+
+    private async Task ExportRanking()
+    {
+        await JsRuntime.InvokeVoidAsync("saveAsFile", "rankings.txt", GetRankingText());
+    }
+
+    private async Task CopyRankingToClipboard()
+    {
+        await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", GetRankingText());
+    }
+    
+}
