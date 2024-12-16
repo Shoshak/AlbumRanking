@@ -6,38 +6,57 @@
 
 <PageTitle>Album ranking</PageTitle>
 
-<EditForm Model="this" OnSubmit="Submit">
+<EditForm Model="this" OnSubmit="Submit" class="p-2">
     <InputNumber @bind-Value="AlbumId"></InputNumber>
 </EditForm>
 
-<SortableList Id="sortable" Items="_tracks" Context="item" OnUpdate="SortList">
-    <SortableItemTemplate>
-        <div class="card">
-            <p>@item</p>
-        </div>
-    </SortableItemTemplate>
-</SortableList>
 
-@if (NotFound)
-{
-    <p>Cannot find the provided album</p>
-}
-
-@if (_tracks.Count != 0)
-{
-    <button @onclick="ExportRanking">Export</button>
-    <button @onclick="CopyRankingToClipboard">Copy</button>
-}
+<div class="p-2">
+    @switch (_state)
+    {
+        case State.First:
+            <p>Чтобы ранкнуть альбомы необходимо:</p>
+            <ol type="1">
+                <li>Найти нужный master на discogs.com (не release!)</li>
+                <li>Скопировать номер из ссылки и вставить сюда</li>
+            </ol>
+            <p>Пояснение с видео есть в тг канале, выше закрепа.</p>
+            break;
+        case State.NotFound:
+            <p>Не могу найти альбом.</p>
+            break;
+        case State.Found:
+            <SortableList Id="sortable" Items="_tracks" Context="item" OnUpdate="SortList">
+                <SortableItemTemplate>
+                    <div class="card" style="height: 4rem;">
+                        <p>@item</p>
+                    </div>
+                </SortableItemTemplate>
+            </SortableList>
+            <button @onclick="ExportRanking" class="mt-2">Export</button>
+            <button @onclick="CopyRankingToClipboard">Copy</button>
+            break;
+        default:
+            throw new ArgumentOutOfRangeException();
+    }
+</div>
 
 @code {
+
+    enum State
+    {
+        First,
+        NotFound,
+        Found
+    }
+
+    private State _state = State.First;
 
     [SupplyParameterFromForm]
     private int? AlbumId { get; set; }
     
     private string? AlbumName { get; set; }
     
-    private bool NotFound { get; set; }
-
     private readonly List<string> _tracks = [];
 
     private async Task Submit()
@@ -51,11 +70,11 @@
         }
         catch (HttpRequestException)
         {
-            NotFound = true;
+            _state = State.NotFound;
             return;
         }
 
-        NotFound = false;
+        _state = State.Found;
         var json = JObject.Parse(resString);
         var tracks =
             from t in json["tracklist"]
