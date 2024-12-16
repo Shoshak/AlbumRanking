@@ -18,8 +18,9 @@ jobs:
     - name: Commit wwwroot to GitHub Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        branch: gh-pages
         folder: release/wwwroot
     - name: Change base-tag in index.html
       run: sed -i 's/<base href="\/" \/>/<base href="\/AlbumRanking\/" \/>/g' release/wwwroot/index.html
     
+permissions:
+  contents: write
