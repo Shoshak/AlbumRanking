@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "AlbumRanking",
   "resources": {
-    "hash": "sha256-teDCdp0pVv6vO+mLKamQ1St5XeJqCMQdrkPyi3pJuOQ=",
+    "hash": "sha256-kxxhh6KsafICxmqublfXqpCt50Spw6rzKakH/A48/Gc=",
     "jsModuleNative": {
       "dotnet.native.8.0.11.n1sf6xr5tz.js": "sha256-VdKq87/z5NIxZKmuM+fv38XF+RcEb/bg3jVBwQSfwP4="
     },
@@ -17,7 +17,7 @@
       "icudt_no_CJK.dat": "sha256-L7sV7NEYP37/Qr2FPCePo5cJqRgTXRwGHuwF5Q+0Nfs="
     },
     "assembly": {
-      "AlbumRanking.wasm": "sha256-tEzclLClLIluHNQ1HW2H1lFSe4sOf0O0Qfcibb7nYx0=",
+      "AlbumRanking.wasm": "sha256-pubCKMADO5rHiIRzRvLmJcXFMiK0GR5F2LMRZ/35VAY=",
       "Microsoft.AspNetCore.Components.Forms.wasm": "sha256-DGztFtXfi/hv/oBMuZWWVVyLCNqo57nPfDwS4No0/cg=",
       "Microsoft.AspNetCore.Components.wasm": "sha256-zMhgl/hf42NJKQryhUKmzU4BNihUS1OucZc/fdr+ggU=",
       "Microsoft.AspNetCore.Components.Web.wasm": "sha256-SHIIkNuMYNrimTgMHvnfTL8+EJqt5Qk8RYWiqzZeN9E=",
