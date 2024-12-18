@@ -12,7 +12,6 @@
         <option value="@Platform.DiscogsRelease">Discogs (Release)</option>
         <option value="@Platform.Spotify">Spotify</option>
     </InputSelect>
-    <button type="reset" class="text-center" @onclick="PageReset"><Sync16 Color="#1f2328" Size="16"/></button>
 </div>
 
 <EditForm Model="this" OnSubmit="Submit" class="p-2">
@@ -106,7 +105,7 @@
     private Platform SelectedPlatform { get; set; }
     private string? AlbumName;
     private readonly List<string> _tracks = [];
-    private async Task PageReset(){
+    private void PageReset(){
         _tracks.Clear();
         _state = State.First;
         AlbumId = 0;
@@ -115,37 +114,28 @@
 
     private async Task Submit(){
         switch (SelectedPlatform){
-                case Home.Platform.DiscogsMaster:
+                case Platform.DiscogsMaster:
                     await SubmitDiscogs();
                     break;
-                case Home.Platform.DiscogsRelease:
+                case Platform.DiscogsRelease:
                     await SubmitDiscogs();
                     break;
-                case Home.Platform.Spotify:
+                case Platform.Spotify:
                     await SubmitSpotify();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
     }
+
     private async Task SubmitDiscogs()
     {
         _tracks.Clear();
         string resString;
-        string Platform;
         try
         {
-            switch (SelectedPlatform){
-                case Home.Platform.DiscogsMaster:
-                    Platform = "masters";
-                    break;
-                case Home.Platform.DiscogsRelease:
-                    Platform = "releases";
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            resString = await Client.GetStringAsync($"https://api.discogs.com/{Platform}/{AlbumId}");
+            var platform = SelectedPlatform == Platform.DiscogsMaster ? "masters" : "releases";
+            resString = await Client.GetStringAsync($"https://api.discogs.com/{platform}/{AlbumId}");
         }
         catch (HttpRequestException)
         {
@@ -165,7 +155,7 @@
     private async Task SubmitSpotify()
     {
         _tracks.Clear();
-        SpotifyAPI.Web.FullAlbum album;
+        FullAlbum album;
         List<string> albumTracks = [];
         try
         {
@@ -183,10 +173,14 @@
         }
     
         _state = State.Found;
-        AlbumName = (string)album.Name;
-        album.Tracks.Items.ForEach(delegate(SpotifyAPI.Web.SimpleTrack track){
-            albumTracks.Add(track.Name);
-        });
+        AlbumName = album.Name;
+        if (album.Tracks.Items == null)
+        {
+            _state = State.NotFound;
+            return;
+        }
+
+        album.Tracks.Items.ForEach(track => albumTracks.Add(track.Name));
         _tracks.AddRange(albumTracks);
     }
     private void SortList((int oldIndex, int newIndex) indices)
