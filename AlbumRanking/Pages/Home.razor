@@ -7,7 +7,7 @@
 <PageTitle>Album ranking</PageTitle>
 
 <div class="p-2">
-    <InputSelect @bind-Value="SelectedPlatform">
+    <InputSelect @bind-Value="SelectedPlatform" @oninput="PageReset">
         <option value="@Platform.DiscogsMaster">Discogs (master)</option>
         <option value="@Platform.DiscogsRelease">Discogs (Release)</option>
         <option value="@Platform.Spotify">Spotify</option>
