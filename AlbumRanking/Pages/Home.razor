@@ -5,32 +5,76 @@
 @inject IJSRuntime JsRuntime
 
 <PageTitle>Album ranking</PageTitle>
-<EditForm Model="this" OnSubmit="SubmitDiscogs" class="p-2">
-    <p>Discogs:</p>
-    <InputNumber @bind-Value="AlbumId"/>
-    <button type="submit">➡️</button>
-</EditForm>
-<EditForm Model="this" OnSubmit="SubmitSpotify" class="p-2">
-    <p>Spotify:</p>
-    <InputText @bind-Value="AlbumBase"/>
-    <button type="submit">➡️</button>
-</EditForm>
+<div class="p-2">
+    <InputSelect @bind-Value="SelectedPlatform">
+        <option value="@Platform.DiscogsMaster">Discogs (master)</option>
+        <option value="@Platform.DiscogsRelease">Discogs (Release)</option>
+        <option value="@Platform.Spotify">Spotify</option>
+    </InputSelect>
+</div>
+@switch (SelectedPlatform){
+    case Platform.DiscogsMaster:
+        <EditForm Model="this" OnSubmit="SubmitDiscogs" class="p-2">
+            <InputNumber @bind-Value="AlbumId" EnableMinMax="true" Min=0 TValue="int" AllowNegativeNumbers="false"/>
+            <button type="submit">➡️</button>
+            <button type="button" @onclick="PageReset">Сброс</button>
+        </EditForm>
+        break;
+    case Platform.DiscogsRelease:
+        <EditForm Model="this" OnSubmit="SubmitDiscogs" class="p-2">
+            <InputNumber @bind-Value="AlbumId" EnableMinMax="true" Min=0 TValue="int" AllowNegativeNumbers="false"/>
+            <button type="submit">➡️</button>
+            <button type="button" @onclick="PageReset">Сброс</button>
+        </EditForm>
+        break;
+    case Platform.Spotify:
+        <EditForm Model="this" OnSubmit="SubmitSpotify" class="p-2">
+            <InputText @bind-Value="AlbumBase" TValue="string"/>
+            <button type="submit">➡️</button>
+            <button type="button" @onclick="PageReset">Сброс</button>
+        </EditForm>
+        break;
+    default:
+        throw new ArgumentOutOfRangeException();
+}
 <div class="p-2">
     @switch (_state)
     {
         case State.First:
-            <p>Чтобы ранкнуть альбомы необходимо:</p>
-            <ol type="1">
-                <li>Найти нужный master на discogs.com (не release!)</li>
-                <li>Скопировать номер из ссылки и вставить сюда</li>
-                <li>Нажать энтер или кнопку "➡️"</li>
-            </ol>
-            <p>или</p>
-            <ol type="1">
-                <li>Найти нужный альбом на Spotify</li>
-                <li>Скопировать часть ссылки (которая идёт после /album/ и до ?) и вставить сюда</li>
-                <li>Нажать энтер или кнопку "➡️"</li>
-            </ol>
+            switch (SelectedPlatform){
+                case Platform.DiscogsMaster:
+                    <div>
+                        <p>Чтобы ранкнуть альбомы необходимо:</p>
+                        <ol type="1">
+                            <li>Найти нужный master на discogs.com (не release!)</li>
+                            <li>Скопировать номер из ссылки и вставить сюда</li>
+                            <li>Нажать энтер или кнопку "➡️"</li>
+                        </ol>
+                    </div>
+                    break;
+                case Platform.DiscogsRelease:
+                    <div>
+                        <p>Чтобы ранкнуть альбомы необходимо:</p>
+                        <ol type="1">
+                            <li>Найти нужный release на discogs.com</li>
+                            <li>Скопировать номер из ссылки и вставить сюда</li>
+                            <li>Нажать энтер или кнопку "➡️"</li>
+                        </ol>
+                    </div>
+                    break;
+                case Platform.Spotify:
+                    <div>
+                        <p>Чтобы ранкнуть альбомы необходимо:</p>
+                        <ol type="1">
+                            <li>Найти нужный альбом на Spotify</li>
+                            <li>Скопировать часть ссылки (которая идёт после /album/ и до ?) и вставить сюда</li>
+                            <li>Нажать энтер или кнопку "➡️"</li>
+                        </ol>
+                    </div>
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+                }
             <p>Пояснение с видео есть в тг канале, выше закрепа.</p>
             break;
         case State.NotFound:
@@ -62,22 +106,47 @@
         Found
     }
 
+    enum Platform
+    {
+        DiscogsMaster,
+        DiscogsRelease,
+        Spotify
+    }
+
     private State _state = State.First;
 
     [SupplyParameterFromForm]
-    private int? AlbumId { get; set;}
-    private string? AlbumBase { get; set; }
-    private string? AlbumName { get; set; }
-    
+    private int AlbumId { get; set; }
+    private string AlbumBase { get; set; }
+    private Platform SelectedPlatform { get; set; }
+    private string? AlbumName;
     private readonly List<string> _tracks = [];
-    
+
+    private async Task PageReset(){
+        _tracks.Clear();
+        _state = State.First;
+        SelectedPlatform = Platform.DiscogsMaster;
+        AlbumId = 0;
+        AlbumBase = "";
+    }
     private async Task SubmitDiscogs()
     {
         _tracks.Clear();
         string resString;
+        string Platform;
         try
         {
-            resString = await Client.GetStringAsync($"https://api.discogs.com/masters/{AlbumId}");
+            switch (SelectedPlatform){
+                case Home.Platform.DiscogsMaster:
+                    Platform = "masters";
+                    break;
+                case Home.Platform.DiscogsRelease:
+                    Platform = "releases";
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            resString = await Client.GetStringAsync($"https://api.discogs.com/{Platform}/{AlbumId}");
         }
         catch (HttpRequestException)
         {
@@ -93,6 +162,7 @@
         AlbumName = (string)json["title"]!;
         _tracks.AddRange(tracks);
     }
+
     private async Task SubmitSpotify()
     {
         _tracks.Clear();
