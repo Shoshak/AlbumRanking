@@ -12,69 +12,51 @@
         <option value="@Platform.Spotify">Spotify</option>
     </InputSelect>
 </div>
-@switch (SelectedPlatform){
-    case Platform.DiscogsMaster:
-        <EditForm Model="this" OnSubmit="SubmitDiscogs" class="p-2">
+
+<EditForm Model="this" OnSubmit="Submit" class="p-2">
+    @switch (SelectedPlatform){
+        case Platform.DiscogsMaster:
             <InputNumber @bind-Value="AlbumId" EnableMinMax="true" Min=0 TValue="int" AllowNegativeNumbers="false"/>
-            <button type="submit">➡️</button>
-            <button type="button" @onclick="PageReset">Сброс</button>
-        </EditForm>
-        break;
-    case Platform.DiscogsRelease:
-        <EditForm Model="this" OnSubmit="SubmitDiscogs" class="p-2">
+            break;
+        case Platform.DiscogsRelease:
             <InputNumber @bind-Value="AlbumId" EnableMinMax="true" Min=0 TValue="int" AllowNegativeNumbers="false"/>
-            <button type="submit">➡️</button>
-            <button type="button" @onclick="PageReset">Сброс</button>
-        </EditForm>
-        break;
-    case Platform.Spotify:
-        <EditForm Model="this" OnSubmit="SubmitSpotify" class="p-2">
+            break;
+        case Platform.Spotify:
             <InputText @bind-Value="AlbumBase" TValue="string"/>
-            <button type="submit">➡️</button>
-            <button type="button" @onclick="PageReset">Сброс</button>
-        </EditForm>
-        break;
-    default:
-        throw new ArgumentOutOfRangeException();
-}
+            break;
+        default:
+            throw new ArgumentOutOfRangeException();
+    }
+    <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
+    <button type="button" class="text-center" @onclick="PageReset"><Sync16 Color="#1f2328" Size="16"/></button>
+</EditForm>
+
 <div class="p-2">
     @switch (_state)
     {
         case State.First:
-            switch (SelectedPlatform){
-                case Platform.DiscogsMaster:
-                    <div>
-                        <p>Чтобы ранкнуть альбомы необходимо:</p>
-                        <ol type="1">
+            <div>
+                <p>Чтобы ранкнуть альбомы необходимо:</p>
+                <ol type="1">
+                    @switch (SelectedPlatform){
+                        case Platform.DiscogsMaster:
                             <li>Найти нужный master на discogs.com (не release!)</li>
                             <li>Скопировать номер из ссылки и вставить сюда</li>
-                            <li>Нажать энтер или кнопку "➡️"</li>
-                        </ol>
-                    </div>
-                    break;
-                case Platform.DiscogsRelease:
-                    <div>
-                        <p>Чтобы ранкнуть альбомы необходимо:</p>
-                        <ol type="1">
+                            break;
+                        case Platform.DiscogsRelease:
                             <li>Найти нужный release на discogs.com</li>
                             <li>Скопировать номер из ссылки и вставить сюда</li>
-                            <li>Нажать энтер или кнопку "➡️"</li>
-                        </ol>
-                    </div>
-                    break;
-                case Platform.Spotify:
-                    <div>
-                        <p>Чтобы ранкнуть альбомы необходимо:</p>
-                        <ol type="1">
+                            break;
+                        case Platform.Spotify:
                             <li>Найти нужный альбом на Spotify</li>
                             <li>Скопировать часть ссылки (которая идёт после /album/ и до ?) и вставить сюда</li>
-                            <li>Нажать энтер или кнопку "➡️"</li>
-                        </ol>
-                    </div>
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-                }
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                    <li>Нажать энтер или кнопку <PaperAirplane16 Color="#1f2328" Size="16"/></li>
+                </ol>
+            </div>
             <p>Пояснение с видео есть в тг канале, выше закрепа.</p>
             break;
         case State.NotFound:
@@ -121,13 +103,27 @@
     private Platform SelectedPlatform { get; set; }
     private string? AlbumName;
     private readonly List<string> _tracks = [];
-
     private async Task PageReset(){
         _tracks.Clear();
         _state = State.First;
-        SelectedPlatform = Platform.DiscogsMaster;
         AlbumId = 0;
         AlbumBase = "";
+    }
+
+    private async Task Submit(){
+        switch (SelectedPlatform){
+                case Home.Platform.DiscogsMaster:
+                    await SubmitDiscogs();
+                    break;
+                case Home.Platform.DiscogsRelease:
+                    await SubmitDiscogs();
+                    break;
+                case Home.Platform.Spotify:
+                    await SubmitSpotify();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
     }
     private async Task SubmitDiscogs()
     {
