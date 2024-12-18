@@ -5,30 +5,33 @@
 @inject IJSRuntime JsRuntime
 
 <PageTitle>Album ranking</PageTitle>
+
 <div class="p-2">
     <InputSelect @bind-Value="SelectedPlatform">
         <option value="@Platform.DiscogsMaster">Discogs (master)</option>
         <option value="@Platform.DiscogsRelease">Discogs (Release)</option>
         <option value="@Platform.Spotify">Spotify</option>
     </InputSelect>
+    <button type="reset" class="text-center" @onclick="PageReset"><Sync16 Color="#1f2328" Size="16"/></button>
 </div>
 
 <EditForm Model="this" OnSubmit="Submit" class="p-2">
     @switch (SelectedPlatform){
         case Platform.DiscogsMaster:
             <InputNumber @bind-Value="AlbumId" EnableMinMax="true" Min=0 TValue="int" AllowNegativeNumbers="false"/>
+            <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
             break;
         case Platform.DiscogsRelease:
             <InputNumber @bind-Value="AlbumId" EnableMinMax="true" Min=0 TValue="int" AllowNegativeNumbers="false"/>
+            <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
             break;
         case Platform.Spotify:
             <InputText @bind-Value="AlbumBase" TValue="string"/>
+            <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
             break;
         default:
             throw new ArgumentOutOfRangeException();
     }
-    <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
-    <button type="button" class="text-center" @onclick="PageReset"><Sync16 Color="#1f2328" Size="16"/></button>
 </EditForm>
 
 <div class="p-2">
@@ -94,12 +97,12 @@
         DiscogsRelease,
         Spotify
     }
-
     private State _state = State.First;
 
     [SupplyParameterFromForm]
     private int AlbumId { get; set; }
     private string AlbumBase { get; set; }
+
     private Platform SelectedPlatform { get; set; }
     private string? AlbumName;
     private readonly List<string> _tracks = [];
@@ -216,7 +219,7 @@
 
     private async Task ExportRanking()
     {
-        await JsRuntime.InvokeVoidAsync("saveAsFile", "rankings.txt", GetRankingText());
+        await JsRuntime.InvokeVoidAsync("saveAsFile", $"{AlbumName}.txt", GetRankingText());
     }
 
     private async Task CopyRankingToClipboard()
