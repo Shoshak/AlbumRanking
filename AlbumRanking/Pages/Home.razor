@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using System.Text.RegularExpressions
 @using Newtonsoft.Json.Linq
 @using AlbumRanking.Shared
 @inject HttpClient Client
@@ -15,22 +16,8 @@
 </div>
 
 <EditForm Model="this" OnSubmit="Submit" class="p-2">
-    @switch (SelectedPlatform){
-        case Platform.DiscogsMaster:
-            <InputNumber @bind-Value="AlbumId" EnableMinMax="true" Min=0 TValue="int" AllowNegativeNumbers="false"/>
-            <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
-            break;
-        case Platform.DiscogsRelease:
-            <InputNumber @bind-Value="AlbumId" EnableMinMax="true" Min=0 TValue="int" AllowNegativeNumbers="false"/>
-            <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
-            break;
-        case Platform.Spotify:
-            <InputText @bind-Value="AlbumBase" TValue="string"/>
-            <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
-            break;
-        default:
-            throw new ArgumentOutOfRangeException();
-    }
+    <InputText @bind-Value="Link" TValue="string"/>
+    <button type="submit" class="text-center"><PaperAirplane16 Color="#1f2328" Size="16"/></button>
 </EditForm>
 
 <div class="p-2">
@@ -38,28 +25,14 @@
     {
         case State.First:
             <div>
-                <p>Чтобы ранкнуть альбомы необходимо:</p>
-                <ol type="1">
-                    @switch (SelectedPlatform){
-                        case Platform.DiscogsMaster:
-                            <li>Найти нужный master на discogs.com (не release!)</li>
-                            <li>Скопировать номер из ссылки и вставить сюда</li>
-                            break;
-                        case Platform.DiscogsRelease:
-                            <li>Найти нужный release на discogs.com</li>
-                            <li>Скопировать номер из ссылки и вставить сюда</li>
-                            break;
-                        case Platform.Spotify:
-                            <li>Найти нужный альбом на Spotify</li>
-                            <li>Скопировать часть ссылки (которая идёт после /album/ и до ?) и вставить сюда</li>
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
-                    <li>Нажать энтер или кнопку <PaperAirplane16 Color="#1f2328" Size="16"/></li>
+                <p>Чтобы ранкнуть альбомы необходимо скопировать ссылку на что-то из этого:</p>
+                <ol>
+                    <li>Discogs релиз</li>
+                    <li>Discogs мастер</li>
+                    <li>Спотифай альбом</li>
                 </ol>
+                <p>А потом нажать кнопку поиска (или энтер)</p>
             </div>
-            <p>Пояснение с видео есть в тг канале, выше закрепа.</p>
             break;
         case State.NotFound:
             <p>Не могу найти альбом.</p>
@@ -82,6 +55,9 @@
     </SortableList>
 </div>
 @code {
+    const string DiscogsReleasePattern = @"release/(\d+)";
+    const string DiscogsMasterPattern = @"master/(\d+)";
+    const string SpotifyPattern = @"album/(.+)\?si";
 
     enum State
     {
@@ -99,24 +75,19 @@
     private State _state = State.First;
 
     [SupplyParameterFromForm]
-    private int AlbumId { get; set; }
-    private string AlbumBase { get; set; }
+    private string? Link { get; set; }
 
     private Platform SelectedPlatform { get; set; }
-    private string? AlbumName;
+    private string? _albumName;
     private readonly List<string> _tracks = [];
     private void PageReset(){
         _tracks.Clear();
         _state = State.First;
-        AlbumId = 0;
-        AlbumBase = "";
     }
 
     private async Task Submit(){
         switch (SelectedPlatform){
                 case Platform.DiscogsMaster:
-                    await SubmitDiscogs();
-                    break;
                 case Platform.DiscogsRelease:
                     await SubmitDiscogs();
                     break;
@@ -130,12 +101,28 @@
 
     private async Task SubmitDiscogs()
     {
+        if (Link == null)
+        {
+            _state = State.NotFound;
+            return;
+        }
+        var linkMatch = Regex.Matches(Link, 
+            SelectedPlatform == Platform.DiscogsRelease ? DiscogsReleasePattern : DiscogsMasterPattern
+            );
+        if (linkMatch.Count == 0)
+        {
+            _state = State.NotFound;
+            return;
+        }
+
+        var id = linkMatch[0].Groups[1].Value;
+
         _tracks.Clear();
         string resString;
         try
         {
             var platform = SelectedPlatform == Platform.DiscogsMaster ? "masters" : "releases";
-            resString = await Client.GetStringAsync($"https://api.discogs.com/{platform}/{AlbumId}");
+            resString = await Client.GetStringAsync($"https://api.discogs.com/{platform}/{id}");
         }
         catch (HttpRequestException)
         {
@@ -148,12 +135,27 @@
         var tracks =
             from t in json["tracklist"]
             select (string)t["title"];
-        AlbumName = (string)json["title"]!;
+        _albumName = (string)json["title"]!;
         _tracks.AddRange(tracks);
     }
 
     private async Task SubmitSpotify()
     {
+        if (Link == null)
+        {
+            _state = State.NotFound;
+            return;
+        }
+
+        var linkMatch = Regex.Matches(Link, SpotifyPattern);
+        if (linkMatch.Count == 0)
+        {
+            _state = State.NotFound;
+            return;
+        }
+
+        var id = linkMatch[0].Groups[1].Value;
+        
         _tracks.Clear();
         FullAlbum album;
         List<string> albumTracks = [];
@@ -164,7 +166,7 @@
             .WithAuthenticator(new ClientCredentialsAuthenticator("1e8c530d1e7c4d2da881a0e38ead5ae3", "8bd4fefe050c4438a1c06b74ac095fc5"));
 
             var spotify = new SpotifyClient(config);
-            album = await spotify.Albums.Get(AlbumBase);
+            album = await spotify.Albums.Get(id);
         }
         catch (APIException)    
         {
@@ -173,7 +175,7 @@
         }
     
         _state = State.Found;
-        AlbumName = album.Name;
+        _albumName = album.Name;
         if (album.Tracks.Items == null)
         {
             _state = State.NotFound;
@@ -208,17 +210,17 @@
 
         var tracks = _tracks.Select((t, i) => $"{i + 1}. {t}");
         var contents = string.Join("\n", tracks);
-        return $"{AlbumName}: \n\n" + contents;
+        return $"{_albumName}: \n\n" + contents;
     }
 
     private async Task ExportRanking()
     {
-        await JsRuntime.InvokeVoidAsync("saveAsFile", $"{AlbumName}.txt", GetRankingText());
+        await JsRuntime.InvokeVoidAsync("saveAsFile", $"{_albumName}.txt", GetRankingText());
     }
 
     private async Task CopyRankingToClipboard()
     {
         await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", GetRankingText());
     }
-    
+
 }
